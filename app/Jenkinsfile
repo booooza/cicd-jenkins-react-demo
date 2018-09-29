@@ -1,0 +1,31 @@
+node {
+    def app
+
+    stage('Clone code repository') {
+        checkout scm
+    }
+
+    stage('Test React Application') {
+        app.inside {
+            sh 'npm run test'
+        }
+    }  
+
+    stage('Build React Bundle') {
+        app.inside {
+            sh 'npm run build'
+        }
+    }
+
+    stage('Build Docker Image') {
+        app = docker.build("booooza/cicd-jenkins-react-demo", "-f app/Dockerfile .")
+    }
+
+
+    stage('Publish Docker Image') {
+        docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
+            app.push("${env.BUILD_NUMBER}")
+            app.push("latest")
+        }
+    }
+}
