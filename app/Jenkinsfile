@@ -1,31 +1,32 @@
 node {
-    def app
+    def nodeHome = tool name: 'node', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+    env.PATH = "${nodeHome}/bin:${env.PATH}"
 
     stage('Clone code repository') {
         checkout scm
     }
 
-    stage('Test React Application') {
-        nodejs() {
-            sh 'npm run test'
-        }
+    stage('Install React Application') {
+        sh 'cd app && npm install' 
     }  
 
     stage('Build React Bundle') {
-        app.inside {
-            sh 'npm run build'
-        }
+        sh 'cd app && npm run build'
     }
 
-    stage('Build Docker Image') {
-        app = docker.build("booooza/cicd-jenkins-react-demo", "-f app/Dockerfile .")
+    withEnv(['CI=true']) {
+        stage('Test React Application') {
+            sh 'cd app && npm test' 
+        }  
     }
-
-
-    stage('Publish Docker Image') {
-        docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-            app.push("${env.BUILD_NUMBER}")
-            app.push("latest")
+    withCredentials([string(credentialsId: 'githubtoken', variable: 'TOKEN')]) {
+        stage('Deploy to Github Pages') {
+            sh '''
+            cd app 
+            git remote rm origin
+            git remote add origin https://booooza:$TOKEN@github.com/booooza/cicd-jenkins-react-demo.git
+            npm run deploy
+            '''
         }
     }
 }

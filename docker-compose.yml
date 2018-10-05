@@ -8,3 +8,5 @@ services:
     build:
         context: .
         dockerfile: jenkins/Dockerfile
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
