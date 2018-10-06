@@ -4,6 +4,7 @@ node {
 
     stage('Clone code repository') {
         checkout scm
+        slackSend "Build Started - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
     }
 
     stage('Install React Application') {
@@ -17,16 +18,7 @@ node {
     withEnv(['CI=true']) {
         stage('Test React Application') {
             sh 'cd app && npm test' 
+            slackSend "Build finished - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
         }  
-    }
-    withCredentials([string(credentialsId: 'githubtoken', variable: 'TOKEN')]) {
-        stage('Deploy to Github Pages') {
-            sh '''
-            cd app 
-            git remote rm origin
-            git remote add origin https://booooza:$TOKEN@github.com/booooza/cicd-jenkins-react-demo.git
-            npm run deploy
-            '''
-        }
     }
 }
